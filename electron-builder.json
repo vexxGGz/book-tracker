@@ -1,0 +1,62 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.booktracker.app",
+  "productName": "Book Tracker",
+  "copyright": "Copyright © 2025 Book Tracker",
+  "asar": true,
+  "asarUnpack": [
+    "node_modules/**/*"
+  ],
+  "directories": {
+    "output": "dist-electron",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.cjs",
+    "type": "commonjs"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "artifactName": "BookTracker-Setup-${version}.${ext}",
+    "icon": "build/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "allowElevation": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Book Tracker",
+    "uninstallDisplayName": "Book Tracker",
+    "deleteAppDataOnUninstall": false
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "artifactName": "BookTracker-${version}-${arch}.${ext}",
+    "icon": "build/icon.png",
+    "category": "public.app-category.productivity"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "artifactName": "BookTracker-${version}-${arch}.${ext}",
+    "icon": "build/icon.png",
+    "category": "Office"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "vexxGGz",
+    "repo": "book-tracker",
+    "releaseType": "release"
+  }
+}
