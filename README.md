@@ -23,30 +23,8 @@ A modern, beautiful web application for tracking your reading journey throughout
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- Google Books API Key (free from Google Cloud Console)
-
-### Installation
-
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Start the development server:
-```bash
-npm run dev
-```
-
-3. Open your browser and navigate to the URL shown in the terminal (usually `http://localhost:5173`)
-
-### Getting a Google Books API Key
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Create a new project or select an existing one
-3. Enable the Google Books API
-4. Create credentials (API Key)
-5. Copy the API key and paste it in the app Settings (gear icon in header)
+- Run BookTracker-Setup-x.x.x.exe to start the installer
+- Follow prompts
 
 ## Usage
 
