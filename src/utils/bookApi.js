@@ -1,7 +1,7 @@
 // Google Books API integration
 
 const GOOGLE_BOOKS_API_BASE = 'https://www.googleapis.com/books/v1/volumes';
-const API_KEY = 'AIzaSyA283qsf7oAD_F2Qo7bqzW7SZ6fzSLK--k';
+const API_KEY = 'AIzaSyCK6Vq3gc_i5KtFazbhvFdoUGtxD6kHlWA';
 
 /**
  * Search for a book by ISBN using Google Books API
