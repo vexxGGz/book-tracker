@@ -68,19 +68,8 @@ npm run build
 
 The built files will be in the `dist` directory.
 
-## Features Coming Soon
-
-- Export data as JSON/CSV
-- Import books from file
-- Dark mode
-- Reading goals
-- Book recommendations
-- Currently reading status
 
 ## License
 
 MIT
 
-## Author
-
-Created with Claude Code
