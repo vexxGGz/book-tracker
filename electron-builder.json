@@ -4,9 +4,6 @@
   "productName": "Book Tracker",
   "copyright": "Copyright © 2025 Book Tracker",
   "asar": true,
-  "asarUnpack": [
-    "node_modules/**/*"
-  ],
   "directories": {
     "output": "dist-electron",
     "buildResources": "build"
