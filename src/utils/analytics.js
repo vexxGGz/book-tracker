@@ -68,9 +68,15 @@ export const filterBooksByYear = (books, year) => {
 /**
  * Calculate total books read
  * @param {Array} books - Array of books
+ * @param {boolean} excludeDNF - Whether to exclude DNF books
  * @returns {number} Total count
  */
-export const getTotalBooks = (books) => books.length;
+export const getTotalBooks = (books, excludeDNF = false) => {
+  if (excludeDNF) {
+    return books.filter(book => !book.didNotFinish).length;
+  }
+  return books.length;
+};
 
 /**
  * Calculate total pages read
@@ -220,14 +226,86 @@ export const getDNFStats = (books) => {
  * @returns {Object} Publishing stats
  */
 export const getPublishingStats = (books) => {
+  const postedAmazon = books.filter(b => b.postedAmazon);
+  const amazonApproved = books.filter(b => b.amazonApproved);
+  const amazonDenied = books.filter(b => b.amazonDenied);
+  
+  // Amazon pending = posted but not yet approved or denied
+  const amazonPending = postedAmazon.filter(b => !b.amazonApproved && !b.amazonDenied);
+  
   return {
     reviewDrafted: books.filter(b => b.reviewDrafted).length,
+    draftedBooks: books.filter(b => b.reviewDrafted),
     postedGoodreads: books.filter(b => b.postedGoodreads).length,
     postedInstagram: books.filter(b => b.postedInstagram).length,
     postedIgBbr: books.filter(b => b.postedIgBbr).length,
     postedBlog: books.filter(b => b.postedBlog).length,
-    postedAmazon: books.filter(b => b.postedAmazon).length,
-    amazonApproved: books.filter(b => b.amazonApproved).length,
+    postedAmazon: postedAmazon.length,
+    amazonApproved: amazonApproved.length,
+    amazonDenied: amazonDenied.length,
+    amazonPending: amazonPending.length,
+    // Total reviews posted across all platforms
+    totalPosted: books.filter(b => 
+      b.postedGoodreads || b.postedInstagram || b.postedIgBbr || b.postedBlog || b.postedAmazon
+    ).length,
+  };
+};
+
+/**
+ * Get total minutes listened (audiobooks only)
+ * @param {Array} books - Array of books
+ * @returns {number} Total minutes
+ */
+export const getTotalMinutesListened = (books) => {
+  return books
+    .filter(book => book.format === 'audiobook')
+    .reduce((total, book) => total + (book.minutesListened || 0), 0);
+};
+
+/**
+ * Get audiobook statistics
+ * @param {Array} books - Array of books
+ * @returns {Object} Audiobook stats
+ */
+export const getAudiobookStats = (books) => {
+  const audiobooks = books.filter(book => book.format === 'audiobook');
+  const totalMinutes = audiobooks.reduce((total, book) => total + (book.minutesListened || 0), 0);
+  
+  return {
+    count: audiobooks.length,
+    totalMinutes,
+    totalHours: Math.round(totalMinutes / 60 * 10) / 10,
+    averageMinutes: audiobooks.length > 0 ? Math.round(totalMinutes / audiobooks.length) : 0,
+  };
+};
+
+/**
+ * Get total savings
+ * @param {Array} books - Array of books
+ * @returns {number} Total saved amount
+ */
+export const getTotalSavings = (books) => {
+  return books.reduce((total, book) => total + (book.savedAmount || 0), 0);
+};
+
+/**
+ * Get spending and savings overview
+ * @param {Array} books - Array of books
+ * @returns {Object} Financial stats
+ */
+export const getFinancialStats = (books) => {
+  const totalSpent = books.reduce((total, book) => total + (book.price || 0), 0);
+  const totalSaved = books.reduce((total, book) => total + (book.savedAmount || 0), 0);
+  const booksWithSpending = books.filter(b => b.price > 0).length;
+  const booksWithSavings = books.filter(b => b.savedAmount > 0).length;
+  
+  return {
+    totalSpent,
+    totalSaved,
+    booksWithSpending,
+    booksWithSavings,
+    averageSpent: booksWithSpending > 0 ? totalSpent / booksWithSpending : 0,
+    averageSaved: booksWithSavings > 0 ? totalSaved / booksWithSavings : 0,
   };
 };
 

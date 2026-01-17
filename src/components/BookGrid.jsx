@@ -38,6 +38,15 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
   const [showImportModal, setShowImportModal] = useState(false);
 
+  // Helper function to normalize search text (makes "and" / "&" interchangeable)
+  const normalizeSearchText = (text) => {
+    if (!text) return '';
+    return text
+      .toLowerCase()
+      .replace(/\s+&\s+/g, ' and ')
+      .replace(/\s+and\s+/g, ' and ');
+  };
+
   const filteredBooks = useMemo(() => {
     let result = filterBooksByYear(books, selectedYear);
     
@@ -52,17 +61,22 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
     }
     
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const normalizedQuery = normalizeSearchText(searchQuery);
       result = result.filter(book => 
-        book.title?.toLowerCase().includes(query) ||
-        book.author?.toLowerCase().includes(query) ||
-        book.genre?.toLowerCase().includes(query) ||
-        book.narrator?.toLowerCase().includes(query)
+        normalizeSearchText(book.title).includes(normalizedQuery) ||
+        normalizeSearchText(book.author).includes(normalizedQuery) ||
+        normalizeSearchText(book.genre).includes(normalizedQuery) ||
+        normalizeSearchText(book.narrator).includes(normalizedQuery)
       );
     }
     
     return result;
   }, [books, selectedYear, formatFilter, statusFilter, searchQuery]);
+
+  // Count of finished books (excludes DNFs)
+  const finishedBooksCount = useMemo(() => {
+    return filteredBooks.filter(book => !book.didNotFinish).length;
+  }, [filteredBooks]);
 
   const availableYears = useMemo(() => {
     return getAvailableYears(books);
@@ -147,8 +161,11 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
               My Library
             </h2>
             <p style={{ fontSize: '14px', marginTop: '4px', color: '#94a3b8' }}>
-              {filteredBooks.length} {filteredBooks.length === 1 ? 'book' : 'books'} 
+              {finishedBooksCount} {finishedBooksCount === 1 ? 'book' : 'books'} 
               {hasActiveFilters ? ' (filtered)' : ` in ${selectedYear}`}
+              {filteredBooks.length !== finishedBooksCount && (
+                <span style={{ color: '#475569' }}> • {filteredBooks.length - finishedBooksCount} DNF</span>
+              )}
             </p>
           </div>
 

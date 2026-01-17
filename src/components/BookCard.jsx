@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Star, Trash2, BookOpen, DollarSign, Headphones, Smartphone, Book, 
-  Calendar, Edit2, Instagram, XCircle, CheckCircle2, Clock
+  Calendar, Edit2, Instagram, XCircle, CheckCircle2, Clock, PiggyBank, Ban
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -302,27 +302,60 @@ const BookCard = ({ book, onDelete, onEdit }) => {
               paddingTop: '8px',
               borderTop: '1px solid rgba(255, 255, 255, 0.06)',
               color: '#94a3b8',
+              flexWrap: 'wrap',
+              gap: '4px',
             }}
           >
-            <span style={{ fontWeight: '600' }}>{book.pages || 0} pages</span>
-            {book.price > 0 && (
-              <span 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '2px',
-                  fontWeight: '600',
-                  padding: '2px 8px',
-                  borderRadius: '8px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  color: '#10b981',
-                }}
-              >
-                <DollarSign style={{ width: '12px', height: '12px' }} />
-                <span>{book.price.toFixed(2)}</span>
+            {book.format === 'audiobook' ? (
+              <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Headphones style={{ width: '12px', height: '12px' }} />
+                {book.minutesListened ? (
+                  book.minutesListened >= 60 
+                    ? `${Math.floor(book.minutesListened / 60)}h ${book.minutesListened % 60}m`
+                    : `${book.minutesListened}m`
+                ) : '0m'}
               </span>
+            ) : (
+              <span style={{ fontWeight: '600' }}>{book.pages || 0} pages</span>
             )}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {book.savedAmount > 0 && (
+                <span 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    fontWeight: '600',
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    background: 'rgba(139, 92, 246, 0.15)',
+                    color: '#a78bfa',
+                  }}
+                >
+                  <PiggyBank style={{ width: '12px', height: '12px' }} />
+                  <span>${book.savedAmount.toFixed(2)}</span>
+                </span>
+              )}
+              {book.price > 0 && (
+                <span 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    fontWeight: '600',
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#10b981',
+                  }}
+                >
+                  <DollarSign style={{ width: '12px', height: '12px' }} />
+                  <span>{book.price.toFixed(2)}</span>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Author Instagram */}
@@ -342,8 +375,8 @@ const BookCard = ({ book, onDelete, onEdit }) => {
           )}
 
           {/* Publishing Status */}
-          {(book.reviewDrafted || publishedCount > 0) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '4px' }}>
+          {(book.reviewDrafted || publishedCount > 0 || book.amazonDenied) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '4px', flexWrap: 'wrap' }}>
               {book.reviewDrafted && (
                 <span 
                   style={{
@@ -369,7 +402,7 @@ const BookCard = ({ book, onDelete, onEdit }) => {
                   }}
                 >
                   <CheckCircle2 style={{ width: '12px', height: '12px' }} />
-                  <span>{publishedCount} posted</span>
+                  <span>{publishedCount} {publishedCount === 1 ? 'review' : 'reviews'} posted</span>
                 </span>
               )}
               {book.amazonApproved && (
@@ -381,6 +414,21 @@ const BookCard = ({ book, onDelete, onEdit }) => {
                   }}
                 >
                   ✓ Amazon
+                </span>
+              )}
+              {book.amazonDenied && (
+                <span 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#ef4444',
+                  }}
+                >
+                  <Ban style={{ width: '12px', height: '12px' }} />
+                  <span>Amazon Denied</span>
                 </span>
               )}
             </div>

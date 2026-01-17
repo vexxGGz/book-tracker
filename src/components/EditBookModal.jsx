@@ -12,10 +12,12 @@ const FORMATS = [
 const SOURCES = [
   { value: '', label: 'Select source...' },
   { value: 'Amazon', label: 'Amazon' },
+  { value: 'ARC', label: 'ARC (Advance Reader Copy)' },
   { value: 'Audible', label: 'Audible' },
   { value: 'Kindle', label: 'Kindle Store' },
   { value: 'Apple Books', label: 'Apple Books' },
   { value: 'Google Play', label: 'Google Play Books' },
+  { value: 'Spotify', label: 'Spotify Audiobooks' },
   { value: 'Barnes & Noble', label: 'Barnes & Noble' },
   { value: 'Library', label: 'Library' },
   { value: 'Gift', label: 'Gift' },
@@ -55,15 +57,18 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     isbn: '',
     genre: '',
     pages: '',
+    minutesListened: '',
     coverUrl: '',
     format: 'physical',
     narrator: '',
     source: '',
     hasPaid: false,
     price: '',
+    hasSaved: false,
+    savedAmount: '',
     startDate: '',
     endDate: '',
-    rating: 5,
+    rating: 0,
     didNotFinish: false,
     dnfReason: '',
     review: '',
@@ -75,6 +80,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     postedBlog: false,
     postedAmazon: false,
     amazonApproved: false,
+    amazonDenied: false,
   });
 
   const [isSearching, setIsSearching] = useState(false);
@@ -85,21 +91,25 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
   useEffect(() => {
     if (book) {
       const hasPaidValue = book.hasPaid !== undefined ? book.hasPaid : (book.price > 0);
+      const hasSavedValue = book.hasSaved !== undefined ? book.hasSaved : (book.savedAmount > 0);
       setFormData({
         title: book.title || '',
         author: book.author || '',
         isbn: book.isbn || '',
         genre: book.genre || '',
         pages: book.pages || '',
+        minutesListened: book.minutesListened || '',
         coverUrl: book.coverUrl || '',
         format: book.format || 'physical',
         narrator: book.narrator || '',
         source: book.source || '',
         hasPaid: hasPaidValue,
         price: book.price || '',
+        hasSaved: hasSavedValue,
+        savedAmount: book.savedAmount || '',
         startDate: book.startDate || '',
         endDate: book.endDate || book.dateRead || '',
-        rating: book.rating || 5,
+        rating: book.rating !== undefined ? book.rating : 0,
         didNotFinish: book.didNotFinish || false,
         dnfReason: book.dnfReason || '',
         review: book.review || '',
@@ -111,11 +121,12 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
         postedBlog: book.postedBlog || false,
         postedAmazon: book.postedAmazon || false,
         amazonApproved: book.amazonApproved || false,
+        amazonDenied: book.amazonDenied || false,
       });
 
       // Show publishing section if any publishing field is true
       if (book.reviewDrafted || book.postedGoodreads || book.postedInstagram ||
-          book.postedIgBbr || book.postedBlog || book.postedAmazon || book.amazonApproved) {
+          book.postedIgBbr || book.postedBlog || book.postedAmazon || book.amazonApproved || book.amazonDenied) {
         setShowPublishingSection(true);
       }
     }
@@ -175,7 +186,9 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     const updatedBook = {
       ...formData,
       pages: parseInt(formData.pages) || 0,
+      minutesListened: parseInt(formData.minutesListened) || 0,
       price: formData.hasPaid ? (parseFloat(formData.price) || 0) : 0,
+      savedAmount: formData.hasSaved ? (parseFloat(formData.savedAmount) || 0) : 0,
       rating: parseInt(formData.rating) || 0,
     };
 
@@ -415,7 +428,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
             </div>
           )}
 
-          {/* Genre & Pages */}
+          {/* Genre & Pages/Minutes */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
             <div>
               <label style={labelStyle}>Genre</label>
@@ -436,54 +449,40 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
                 }}
               />
             </div>
-            <div>
-              <label style={labelStyle}>Pages</label>
-              <input
-                type="number"
-                name="pages"
-                value={formData.pages}
-                onChange={handleInputChange}
-                onWheel={preventScroll}
-                placeholder="200"
-                min="0"
-                style={inputStyle}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#10b981';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Price with checkbox */}
-          <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '8px' }}>
-              <input
-                type="checkbox"
-                name="hasPaid"
-                checked={formData.hasPaid}
-                onChange={handleInputChange}
-                style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
-              />
-              <span style={{ color: '#94a3b8', fontSize: '14px' }}>I paid for this book</span>
-            </label>
-            {formData.hasPaid && (
-              <div style={{ marginTop: '8px' }}>
-                <label style={labelStyle}>Price (USD)</label>
+            {isAudiobook ? (
+              <div>
+                <label style={labelStyle}>Minutes Listened</label>
                 <input
                   type="number"
-                  name="price"
-                  value={formData.price}
+                  name="minutesListened"
+                  value={formData.minutesListened}
                   onChange={handleInputChange}
                   onWheel={preventScroll}
-                  placeholder="15.99"
-                  step="0.01"
+                  placeholder="360"
                   min="0"
-                  style={{ ...inputStyle, maxWidth: '200px' }}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#10b981';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div>
+                <label style={labelStyle}>Pages</label>
+                <input
+                  type="number"
+                  name="pages"
+                  value={formData.pages}
+                  onChange={handleInputChange}
+                  onWheel={preventScroll}
+                  placeholder="200"
+                  min="0"
+                  style={inputStyle}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#10b981';
                     e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
@@ -495,6 +494,82 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
                 />
               </div>
             )}
+          </div>
+
+          {/* Price & Savings */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '8px' }}>
+                <input
+                  type="checkbox"
+                  name="hasPaid"
+                  checked={formData.hasPaid}
+                  onChange={handleInputChange}
+                  style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                />
+                <span style={{ color: '#94a3b8', fontSize: '14px' }}>I paid for this book</span>
+              </label>
+              {formData.hasPaid && (
+                <div style={{ marginTop: '8px' }}>
+                  <label style={labelStyle}>Price (USD)</label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    onWheel={preventScroll}
+                    placeholder="15.99"
+                    step="0.01"
+                    min="0"
+                    style={{ ...inputStyle, maxWidth: '200px' }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#10b981';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '8px' }}>
+                <input
+                  type="checkbox"
+                  name="hasSaved"
+                  checked={formData.hasSaved}
+                  onChange={handleInputChange}
+                  style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                />
+                <span style={{ color: '#94a3b8', fontSize: '14px' }}>I saved on this book</span>
+              </label>
+              {formData.hasSaved && (
+                <div style={{ marginTop: '8px' }}>
+                  <label style={labelStyle}>Amount Saved (USD)</label>
+                  <input
+                    type="number"
+                    name="savedAmount"
+                    value={formData.savedAmount}
+                    onChange={handleInputChange}
+                    onWheel={preventScroll}
+                    placeholder="10.00"
+                    step="0.01"
+                    min="0"
+                    style={{ ...inputStyle, maxWidth: '200px' }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#10b981';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Cover URL */}
@@ -560,13 +635,13 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
 
           {/* Rating */}
           <div>
-            <label style={labelStyle}>Rating</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <label style={labelStyle}>Rating {formData.rating === 0 && <span style={{ color: '#475569', fontWeight: '400' }}>(not rated)</span>}</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                  onClick={() => setFormData(prev => ({ ...prev, rating: prev.rating === star ? 0 : star }))}
                   style={{
                     width: '40px',
                     height: '40px',
@@ -589,6 +664,24 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
                   ★
                 </button>
               ))}
+              {formData.rating > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, rating: 0 }))}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    background: 'transparent',
+                    color: '#475569',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 
@@ -755,7 +848,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
 
                 <div style={{ paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                   <p style={{ fontSize: '12px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569', marginBottom: '8px' }}>Amazon Review:</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
@@ -764,7 +857,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
                         onChange={handleInputChange}
                         style={{ width: '16px', height: '16px', accentColor: '#f59e0b' }}
                       />
-                      <span style={{ color: '#94a3b8', fontSize: '14px' }}>Posted to Amazon</span>
+                      <span style={{ color: '#94a3b8', fontSize: '14px' }}>Posted</span>
                     </label>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
@@ -775,7 +868,18 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
                         onChange={handleInputChange}
                         style={{ width: '16px', height: '16px', accentColor: '#10b981' }}
                       />
-                      <span style={{ color: '#94a3b8', fontSize: '14px' }}>Amazon Approved</span>
+                      <span style={{ color: '#94a3b8', fontSize: '14px' }}>Approved</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        name="amazonDenied"
+                        checked={formData.amazonDenied}
+                        onChange={handleInputChange}
+                        style={{ width: '16px', height: '16px', accentColor: '#ef4444' }}
+                      />
+                      <span style={{ color: '#94a3b8', fontSize: '14px' }}>Denied</span>
                     </label>
                   </div>
                 </div>
