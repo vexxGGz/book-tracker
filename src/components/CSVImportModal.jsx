@@ -171,11 +171,24 @@ const CSVImportModal = ({ onClose, onImportComplete }) => {
       setStep('importing');
 
       // Save all books
-      await saveBooks([...existingBooks, ...booksToAdd]);
+      const allBooks = [...existingBooks, ...booksToAdd];
+      const saveResult = await saveBooks(allBooks);
+      
+      if (!saveResult) {
+        throw new Error('Failed to save books to storage');
+      }
+
+      // Verify books were saved
+      const verifyBooks = await loadBooks();
+      const actualAdded = verifyBooks.length - existingBooks.length;
+      
+      if (actualAdded !== booksToAdd.length) {
+        console.warn(`Expected to add ${booksToAdd.length} books, but only ${actualAdded} were added`);
+      }
 
       setImportErrors(errors);
       setImportResults({
-        added: booksToAdd.length,
+        added: actualAdded,
         skipped: duplicates.length - selectedDuplicates.size,
         errors: errors.length,
         coversFound: coversFound,

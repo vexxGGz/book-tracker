@@ -231,7 +231,7 @@ export const getPublishingStats = (books) => {
   const amazonDenied = books.filter(b => b.amazonDenied);
   
   // Amazon pending = posted but not yet approved or denied
-  const amazonPending = postedAmazon.filter(b => !b.amazonApproved && !b.amazonDenied);
+  const amazonPendingBooks = postedAmazon.filter(b => !b.amazonApproved && !b.amazonDenied);
   
   return {
     reviewDrafted: books.filter(b => b.reviewDrafted).length,
@@ -243,7 +243,8 @@ export const getPublishingStats = (books) => {
     postedAmazon: postedAmazon.length,
     amazonApproved: amazonApproved.length,
     amazonDenied: amazonDenied.length,
-    amazonPending: amazonPending.length,
+    amazonPending: amazonPendingBooks.length,
+    pendingBooks: amazonPendingBooks,
     // Total reviews posted across all platforms
     totalPosted: books.filter(b => 
       b.postedGoodreads || b.postedInstagram || b.postedIgBbr || b.postedBlog || b.postedAmazon

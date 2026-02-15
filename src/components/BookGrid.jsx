@@ -20,6 +20,16 @@ const STATUS_FILTERS = [
   { value: 'dnf', label: 'Did Not Finish' },
 ];
 
+const RATING_FILTERS = [
+  { value: '', label: 'All Ratings' },
+  { value: '5', label: '★★★★★ (5)' },
+  { value: '4', label: '★★★★☆ (4+)' },
+  { value: '3', label: '★★★☆☆ (3+)' },
+  { value: '2', label: '★★☆☆☆ (2+)' },
+  { value: '1', label: '★☆☆☆☆ (1+)' },
+  { value: '0', label: 'Unrated' },
+];
+
 const selectStyles = {
   padding: '8px 16px',
   background: 'var(--bg-tertiary)',
@@ -33,6 +43,10 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
   const [editingBook, setEditingBook] = useState(null);
   const [formatFilter, setFormatFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [ratingFilter, setRatingFilter] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [startDateFrom, setStartDateFrom] = useState('');
+  const [startDateTo, setStartDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
@@ -60,6 +74,37 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
       result = result.filter(book => !book.didNotFinish);
     }
     
+    // Rating filter
+    if (ratingFilter !== '') {
+      const ratingValue = parseInt(ratingFilter);
+      if (ratingValue === 0) {
+        result = result.filter(book => !book.rating || book.rating === 0);
+      } else {
+        result = result.filter(book => book.rating >= ratingValue);
+      }
+    }
+    
+    // Author filter
+    if (authorFilter) {
+      result = result.filter(book => 
+        book.author?.toLowerCase().includes(authorFilter.toLowerCase())
+      );
+    }
+    
+    // Start Date range filter
+    if (startDateFrom) {
+      result = result.filter(book => {
+        if (!book.startDate) return false;
+        return book.startDate >= startDateFrom;
+      });
+    }
+    if (startDateTo) {
+      result = result.filter(book => {
+        if (!book.startDate) return false;
+        return book.startDate <= startDateTo;
+      });
+    }
+    
     if (searchQuery.trim()) {
       const normalizedQuery = normalizeSearchText(searchQuery);
       result = result.filter(book => 
@@ -71,7 +116,16 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
     }
     
     return result;
-  }, [books, selectedYear, formatFilter, statusFilter, searchQuery]);
+  }, [books, selectedYear, formatFilter, statusFilter, ratingFilter, authorFilter, startDateFrom, startDateTo, searchQuery]);
+
+  // Get unique authors for the author filter dropdown
+  const uniqueAuthors = useMemo(() => {
+    const authors = new Set();
+    filterBooksByYear(books, selectedYear).forEach(book => {
+      if (book.author) authors.add(book.author);
+    });
+    return Array.from(authors).sort();
+  }, [books, selectedYear]);
 
   // Count of finished books (excludes DNFs)
   const finishedBooksCount = useMemo(() => {
@@ -98,10 +152,14 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
   const clearFilters = () => {
     setFormatFilter('');
     setStatusFilter('');
+    setRatingFilter('');
+    setAuthorFilter('');
+    setStartDateFrom('');
+    setStartDateTo('');
     setSearchQuery('');
   };
 
-  const hasActiveFilters = formatFilter || statusFilter || searchQuery;
+  const hasActiveFilters = formatFilter || statusFilter || ratingFilter || authorFilter || startDateFrom || startDateTo || searchQuery;
 
   if (books.length === 0) {
     return (
@@ -449,8 +507,7 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
             style={{
               marginTop: '16px',
               display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
+              flexDirection: 'column',
               gap: '12px',
               padding: '16px',
               borderRadius: '12px',
@@ -458,59 +515,137 @@ const BookGrid = ({ books, selectedYear, onYearChange, onDeleteBook, onRefresh }
               border: '1px solid rgba(255, 255, 255, 0.06)',
             }}
           >
-            <select
-              value={formatFilter}
-              onChange={(e) => setFormatFilter(e.target.value)}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '10px',
-                background: '#1a1a26',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                color: '#f1f5f9',
-                fontSize: '14px',
-              }}
-            >
-              {FORMATS.map(f => (
-                <option key={f.value} value={f.value} style={{ background: '#1a1a26' }}>{f.label}</option>
-              ))}
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '10px',
-                background: '#1a1a26',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                color: '#f1f5f9',
-                fontSize: '14px',
-              }}
-            >
-              {STATUS_FILTERS.map(s => (
-                <option key={s.value} value={s.value} style={{ background: '#1a1a26' }}>{s.label}</option>
-              ))}
-            </select>
-
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
+            {/* First row of filters */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+              <select
+                value={formatFilter}
+                onChange={(e) => setFormatFilter(e.target.value)}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '10px 12px',
+                  padding: '10px 16px',
                   borderRadius: '10px',
-                  border: 'none',
-                  background: 'transparent',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
+                  background: '#1a1a26',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  color: '#f1f5f9',
+                  fontSize: '14px',
                 }}
               >
-                <X style={{ width: '16px', height: '16px' }} />
-                <span>Clear filters</span>
-              </button>
-            )}
+                {FORMATS.map(f => (
+                  <option key={f.value} value={f.value} style={{ background: '#1a1a26' }}>{f.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  background: '#1a1a26',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  color: '#f1f5f9',
+                  fontSize: '14px',
+                }}
+              >
+                {STATUS_FILTERS.map(s => (
+                  <option key={s.value} value={s.value} style={{ background: '#1a1a26' }}>{s.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  background: '#1a1a26',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  color: '#f1f5f9',
+                  fontSize: '14px',
+                }}
+              >
+                {RATING_FILTERS.map(r => (
+                  <option key={r.value} value={r.value} style={{ background: '#1a1a26' }}>{r.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={authorFilter}
+                onChange={(e) => setAuthorFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  background: '#1a1a26',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  color: '#f1f5f9',
+                  fontSize: '14px',
+                  maxWidth: '200px',
+                }}
+              >
+                <option value="" style={{ background: '#1a1a26' }}>All Authors</option>
+                {uniqueAuthors.map(author => (
+                  <option key={author} value={author} style={{ background: '#1a1a26' }}>{author}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Second row - Date Started range */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+              <span style={{ color: '#94a3b8', fontSize: '14px' }}>Date Started:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="date"
+                  value={startDateFrom}
+                  onChange={(e) => setStartDateFrom(e.target.value)}
+                  placeholder="From"
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    background: '#1a1a26',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    color: '#f1f5f9',
+                    fontSize: '14px',
+                    colorScheme: 'dark',
+                  }}
+                />
+                <span style={{ color: '#475569' }}>→</span>
+                <input
+                  type="date"
+                  value={startDateTo}
+                  onChange={(e) => setStartDateTo(e.target.value)}
+                  placeholder="To"
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    background: '#1a1a26',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    color: '#f1f5f9',
+                    fontSize: '14px',
+                    colorScheme: 'dark',
+                  }}
+                />
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    marginLeft: 'auto',
+                  }}
+                >
+                  <X style={{ width: '16px', height: '16px' }} />
+                  <span>Clear filters</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

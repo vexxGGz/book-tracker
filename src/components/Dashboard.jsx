@@ -175,7 +175,7 @@ const Dashboard = ({ books, selectedYear, onYearChange }) => {
       </div>
 
       {/* Reading Goal */}
-      <ReadingGoal year={selectedYear} booksReadThisYear={stats.totalBooks} />
+      <ReadingGoal year={selectedYear} booksReadThisYear={stats.finishedBooks} />
 
       {/* Main Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
@@ -228,6 +228,9 @@ const Dashboard = ({ books, selectedYear, onYearChange }) => {
           />
         )}
       </div>
+
+      {/* Publishing Tracker - Moved above Books Per Month */}
+      <PublishingTracker stats={stats.publishing} />
 
       {/* Monthly Chart */}
       <div style={{ ...cardStyle, padding: '24px' }}>
@@ -290,9 +293,6 @@ const Dashboard = ({ books, selectedYear, onYearChange }) => {
           </div>
         </div>
       )}
-
-      {/* Publishing Tracker */}
-      <PublishingTracker stats={stats.publishing} />
     </div>
   );
 };
@@ -330,6 +330,7 @@ const StatCard = ({ icon, label, value, subtitle, gradient, glow }) => {
 // Publishing Tracker Component
 const PublishingTracker = ({ stats }) => {
   const [showDraftedList, setShowDraftedList] = useState(false);
+  const [showPendingList, setShowPendingList] = useState(false);
   
   // Check if there's any publishing activity
   const hasActivity = stats.reviewDrafted > 0 || stats.totalPosted > 0 || 
@@ -385,14 +386,27 @@ const PublishingTracker = ({ stats }) => {
 
         {/* Amazon Pending */}
         {stats.amazonPending > 0 && (
-          <div style={{ padding: '16px', borderRadius: '12px', background: '#1a1a26' }}>
+          <div 
+            style={{
+              padding: '16px',
+              borderRadius: '12px',
+              background: '#1a1a26',
+              cursor: 'pointer',
+            }}
+            onClick={() => setShowPendingList(!showPendingList)}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <AlertCircle style={{ width: '16px', height: '16px', color: '#f59e0b' }} />
               <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amazon Pending</span>
             </div>
-            <span style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b', fontFamily: 'JetBrains Mono, monospace' }}>
-              {stats.amazonPending}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b', fontFamily: 'JetBrains Mono, monospace' }}>
+                {stats.amazonPending}
+              </span>
+              <span style={{ fontSize: '12px', color: '#475569' }}>
+                {showPendingList ? '▲' : '▼'}
+              </span>
+            </div>
           </div>
         )}
 
@@ -444,6 +458,49 @@ const PublishingTracker = ({ stats }) => {
                 }}
               >
                 <Clock style={{ width: '14px', height: '14px', color: '#f59e0b', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#f1f5f9', 
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {book.title}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                    by {book.author}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Amazon Pending Books List (Expandable) */}
+      {showPendingList && stats.pendingBooks && stats.pendingBooks.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', marginBottom: '12px' }}>
+            Amazon Pending Reviews ({stats.pendingBooks.length})
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {stats.pendingBooks.map((book) => (
+              <div 
+                key={book.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: 'rgba(245, 158, 11, 0.1)',
+                  border: '1px solid rgba(245, 158, 11, 0.2)',
+                }}
+              >
+                <AlertCircle style={{ width: '14px', height: '14px', color: '#f59e0b', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ 
                     fontSize: '14px', 

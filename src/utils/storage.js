@@ -128,11 +128,11 @@ export const exportBooksAsCSV = async () => {
   
   // CSV headers
   const headers = [
-    'Title', 'Author', 'ISBN', 'Genre', 'Pages', 'Format', 'Narrator', 'Source',
+    'Title', 'Author', 'ISBN', 'Genre', 'Pages', 'Medium', 'Book Format', 'Narrator', 'Source',
     'Price', 'Currency', 'Start Date', 'End Date', 'Rating', 'Did Not Finish',
-    'DNF Reason', 'Review', 'Author Instagram', 'Cover URL',
+    'DNF Reason', 'Is Reread', 'Review', 'Author Instagram', 'Cover URL',
     'Review Drafted', 'Posted Goodreads', 'Posted Instagram', 'Posted IG BBR',
-    'Posted Blog', 'Posted Amazon', 'Amazon Approved', 'Date Added'
+    'Posted Blog', 'Posted Amazon', 'Amazon Approved', 'Amazon Denied', 'Date Added', 'Minutes Listened'
   ];
   
   // Escape CSV values
@@ -153,6 +153,7 @@ export const exportBooksAsCSV = async () => {
     escapeCSV(book.genre),
     escapeCSV(book.pages || ''),
     escapeCSV(book.format || 'physical'),
+    escapeCSV(book.bookFormat || ''),
     escapeCSV(book.narrator),
     escapeCSV(book.source),
     escapeCSV(book.price || ''),
@@ -162,6 +163,7 @@ export const exportBooksAsCSV = async () => {
     escapeCSV(book.rating || ''),
     escapeCSV(book.didNotFinish ? 'Yes' : 'No'),
     escapeCSV(book.dnfReason),
+    escapeCSV(book.isReread ? 'Yes' : 'No'),
     escapeCSV(book.review),
     escapeCSV(book.authorInstagram),
     escapeCSV(book.coverUrl),
@@ -172,7 +174,9 @@ export const exportBooksAsCSV = async () => {
     escapeCSV(book.postedBlog ? 'Yes' : 'No'),
     escapeCSV(book.postedAmazon ? 'Yes' : 'No'),
     escapeCSV(book.amazonApproved ? 'Yes' : 'No'),
+    escapeCSV(book.amazonDenied ? 'Yes' : 'No'),
     escapeCSV(book.dateAdded),
+    escapeCSV(book.minutesListened || ''),
   ].join(','));
   
   const csvContent = [headers.join(','), ...rows].join('\n');
@@ -345,9 +349,30 @@ export const parseCSV = (csvContent) => {
         case 'amazonapproved':
           book.amazonApproved = parseBoolean(value); 
           break;
+        case 'amazon denied': 
+        case 'amazondenied':
+          book.amazonDenied = parseBoolean(value); 
+          break;
         case 'date added': 
         case 'dateadded':
           book.dateAdded = normalizeDate(value); 
+          break;
+        case 'book format':
+        case 'bookformat':
+          book.bookFormat = value.toLowerCase();
+          break;
+        case 'medium':
+          // Medium maps to format for storage
+          book.format = value.toLowerCase() || 'physical';
+          break;
+        case 'is reread':
+        case 'isreread':
+        case 'reread':
+          book.isReread = parseBoolean(value);
+          break;
+        case 'minutes listened':
+        case 'minuteslistened':
+          book.minutesListened = parseInt(value) || 0;
           break;
       }
     });

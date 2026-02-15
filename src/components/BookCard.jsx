@@ -17,6 +17,13 @@ const FORMAT_LABELS = {
   audiobook: 'Audiobook',
 };
 
+const BOOK_FORMAT_LABELS = {
+  standalone: 'Standalone',
+  interconnected: 'Interconnected',
+  series: 'Series',
+  novella: 'Novella',
+};
+
 const cardStyle = {
   background: 'rgba(20, 20, 32, 0.85)',
   border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -181,6 +188,28 @@ const BookCard = ({ book, onDelete, onEdit }) => {
             </div>
           )}
 
+          {/* Re-read Badge */}
+          {book.isReread && !book.didNotFinish && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '9999px',
+                fontSize: '12px',
+                fontWeight: '500',
+                background: 'rgba(139, 92, 246, 0.9)',
+                color: 'white',
+              }}
+            >
+              <span>↺ Re-read</span>
+            </div>
+          )}
+
           {/* Source Badge */}
           {book.source && (
             <div 
@@ -252,8 +281,8 @@ const BookCard = ({ book, onDelete, onEdit }) => {
             </p>
           )}
 
-          {/* Genre & Rating Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Genre & Format Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {book.genre && (
               <span 
                 style={{
@@ -268,6 +297,24 @@ const BookCard = ({ book, onDelete, onEdit }) => {
                 {book.genre}
               </span>
             )}
+            {book.bookFormat && BOOK_FORMAT_LABELS[book.bookFormat] && (
+              <span 
+                style={{
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  padding: '2px 8px',
+                  borderRadius: '9999px',
+                  background: 'rgba(16, 185, 129, 0.2)',
+                  color: '#34d399',
+                }}
+              >
+                {BOOK_FORMAT_LABELS[book.bookFormat]}
+              </span>
+            )}
+          </div>
+
+          {/* Rating Row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <div>{renderStars(book.rating)}</div>
           </div>
 
@@ -287,6 +334,8 @@ const BookCard = ({ book, onDelete, onEdit }) => {
               <span>{startDate} → {endDate}</span>
             ) : endDate ? (
               <span>Finished {endDate}</span>
+            ) : startDate ? (
+              <span>Started {startDate}</span>
             ) : (
               <span>Date not set</span>
             )}

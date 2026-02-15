@@ -3,15 +3,24 @@ import { X, Search, Loader2, BookOpen, ChevronDown, ChevronUp, Save } from 'luci
 import { updateBook } from '../utils/storage';
 import { searchBookByISBN } from '../utils/bookApi';
 
-const FORMATS = [
+const MEDIUMS = [
   { value: 'physical', label: 'Physical Book' },
   { value: 'ebook', label: 'E-Reader / Kindle' },
   { value: 'audiobook', label: 'Audiobook' },
 ];
 
+const BOOK_FORMATS = [
+  { value: '', label: 'Select format...' },
+  { value: 'standalone', label: 'Standalone' },
+  { value: 'interconnected', label: 'Interconnected Standalone' },
+  { value: 'series', label: 'Series' },
+  { value: 'novella', label: 'Novella' },
+];
+
 const SOURCES = [
   { value: '', label: 'Select source...' },
   { value: 'Amazon', label: 'Amazon' },
+  { value: 'ALC', label: 'ALC (Advanced Listener Copy)' },
   { value: 'ARC', label: 'ARC (Advance Reader Copy)' },
   { value: 'Audible', label: 'Audible' },
   { value: 'Kindle', label: 'Kindle Store' },
@@ -21,6 +30,7 @@ const SOURCES = [
   { value: 'Barnes & Noble', label: 'Barnes & Noble' },
   { value: 'Library', label: 'Library' },
   { value: 'Gift', label: 'Gift' },
+  { value: 'TBR', label: 'TBR' },
   { value: 'Thrift Store', label: 'Thrift Store' },
   { value: 'Other', label: 'Other' },
 ];
@@ -58,8 +68,11 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     genre: '',
     pages: '',
     minutesListened: '',
+    listeningHours: '',
+    listeningMinutes: '',
     coverUrl: '',
-    format: 'physical',
+    medium: 'physical',
+    bookFormat: '',
     narrator: '',
     source: '',
     hasPaid: false,
@@ -71,6 +84,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     rating: 0,
     didNotFinish: false,
     dnfReason: '',
+    isReread: false,
     review: '',
     authorInstagram: '',
     reviewDrafted: false,
@@ -92,6 +106,10 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     if (book) {
       const hasPaidValue = book.hasPaid !== undefined ? book.hasPaid : (book.price > 0);
       const hasSavedValue = book.hasSaved !== undefined ? book.hasSaved : (book.savedAmount > 0);
+      // Convert total minutes to hours and minutes for display
+      const totalMinutes = book.minutesListened || 0;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
       setFormData({
         title: book.title || '',
         author: book.author || '',
@@ -99,8 +117,11 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
         genre: book.genre || '',
         pages: book.pages || '',
         minutesListened: book.minutesListened || '',
+        listeningHours: hours > 0 ? hours.toString() : '',
+        listeningMinutes: minutes > 0 ? minutes.toString() : '',
         coverUrl: book.coverUrl || '',
-        format: book.format || 'physical',
+        medium: book.format || 'physical',
+        bookFormat: book.bookFormat || '',
         narrator: book.narrator || '',
         source: book.source || '',
         hasPaid: hasPaidValue,
@@ -112,6 +133,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
         rating: book.rating !== undefined ? book.rating : 0,
         didNotFinish: book.didNotFinish || false,
         dnfReason: book.dnfReason || '',
+        isReread: book.isReread || false,
         review: book.review || '',
         authorInstagram: book.authorInstagram || '',
         reviewDrafted: book.reviewDrafted || false,
@@ -183,21 +205,30 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
       return;
     }
 
+    // Calculate total minutes from hours + minutes
+    const totalMinutes = (parseInt(formData.listeningHours) || 0) * 60 + (parseInt(formData.listeningMinutes) || 0);
+    
     const updatedBook = {
       ...formData,
       pages: parseInt(formData.pages) || 0,
-      minutesListened: parseInt(formData.minutesListened) || 0,
+      minutesListened: totalMinutes || parseInt(formData.minutesListened) || 0,
+      format: formData.medium, // Store medium as 'format' for backwards compatibility
+      bookFormat: formData.bookFormat,
       price: formData.hasPaid ? (parseFloat(formData.price) || 0) : 0,
       savedAmount: formData.hasSaved ? (parseFloat(formData.savedAmount) || 0) : 0,
       rating: parseInt(formData.rating) || 0,
     };
+    // Remove temporary fields
+    delete updatedBook.listeningHours;
+    delete updatedBook.listeningMinutes;
+    delete updatedBook.medium;
 
     await updateBook(book.id, updatedBook);
     onBookUpdated();
     onClose();
   };
 
-  const isAudiobook = formData.format === 'audiobook';
+  const isAudiobook = formData.medium === 'audiobook';
 
   return (
     <div 
@@ -375,34 +406,49 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
             </div>
           </div>
 
-          {/* Format & Source */}
+          {/* Medium & Format */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
             <div>
-              <label style={labelStyle}>Format *</label>
+              <label style={labelStyle}>Medium *</label>
               <select
-                name="format"
-                value={formData.format}
+                name="medium"
+                value={formData.medium}
                 onChange={handleInputChange}
                 style={inputStyle}
               >
-                {FORMATS.map(f => (
+                {MEDIUMS.map(f => (
                   <option key={f.value} value={f.value} style={{ background: '#1a1a26' }}>{f.label}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Source</label>
+              <label style={labelStyle}>Format</label>
               <select
-                name="source"
-                value={formData.source}
+                name="bookFormat"
+                value={formData.bookFormat}
                 onChange={handleInputChange}
                 style={inputStyle}
               >
-                {SOURCES.map(s => (
-                  <option key={s.value} value={s.value} style={{ background: '#1a1a26' }}>{s.label}</option>
+                {BOOK_FORMATS.map(f => (
+                  <option key={f.value} value={f.value} style={{ background: '#1a1a26' }}>{f.label}</option>
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Source */}
+          <div>
+            <label style={labelStyle}>Source</label>
+            <select
+              name="source"
+              value={formData.source}
+              onChange={handleInputChange}
+              style={inputStyle}
+            >
+              {SOURCES.map(s => (
+                <option key={s.value} value={s.value} style={{ background: '#1a1a26' }}>{s.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Narrator (only for audiobooks) */}
@@ -451,25 +497,53 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
             </div>
             {isAudiobook ? (
               <div>
-                <label style={labelStyle}>Minutes Listened</label>
-                <input
-                  type="number"
-                  name="minutesListened"
-                  value={formData.minutesListened}
-                  onChange={handleInputChange}
-                  onWheel={preventScroll}
-                  placeholder="360"
-                  min="0"
-                  style={inputStyle}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#10b981';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                <label style={labelStyle}>Listening Time</label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="number"
+                      name="listeningHours"
+                      value={formData.listeningHours}
+                      onChange={handleInputChange}
+                      onWheel={preventScroll}
+                      placeholder="0"
+                      min="0"
+                      style={{ ...inputStyle, textAlign: 'center' }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#10b981';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    <span style={{ display: 'block', textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '4px' }}>hours</span>
+                  </div>
+                  <span style={{ color: '#475569', fontSize: '20px', fontWeight: '600' }}>:</span>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="number"
+                      name="listeningMinutes"
+                      value={formData.listeningMinutes}
+                      onChange={handleInputChange}
+                      onWheel={preventScroll}
+                      placeholder="0"
+                      min="0"
+                      max="59"
+                      style={{ ...inputStyle, textAlign: 'center' }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#10b981';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    <span style={{ display: 'block', textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '4px' }}>minutes</span>
+                  </div>
+                </div>
               </div>
             ) : (
               <div>
@@ -685,18 +759,30 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
             </div>
           </div>
 
-          {/* Did Not Finish */}
+          {/* Status Checkboxes */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                name="didNotFinish"
-                checked={formData.didNotFinish}
-                onChange={handleInputChange}
-                style={{ width: '20px', height: '20px', accentColor: '#ef4444' }}
-              />
-              <span style={{ color: '#94a3b8', fontSize: '14px' }}>Did Not Finish (DNF)</span>
-            </label>
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="didNotFinish"
+                  checked={formData.didNotFinish}
+                  onChange={handleInputChange}
+                  style={{ width: '20px', height: '20px', accentColor: '#ef4444' }}
+                />
+                <span style={{ color: '#94a3b8', fontSize: '14px' }}>Did Not Finish (DNF)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="isReread"
+                  checked={formData.isReread}
+                  onChange={handleInputChange}
+                  style={{ width: '20px', height: '20px', accentColor: '#8b5cf6' }}
+                />
+                <span style={{ color: '#94a3b8', fontSize: '14px' }}>Re-read</span>
+              </label>
+            </div>
             
             {formData.didNotFinish && (
               <div>
