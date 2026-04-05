@@ -94,19 +94,36 @@ const rotateBackups = async (backupDir) => {
 };
 
 /**
- * Create a timestamped backup of bookTrackerData.json.
+ * Create a timestamped backup of all data files in the data directory.
+ * Each .json file is read and bundled into a single snapshot object keyed by
+ * filename stem (e.g. { bookTrackerData: [...], readingGoals: {...}, ... }).
+ * This captures full app state and automatically includes any future data keys.
+ *
  * Keeps at most MAX_BACKUPS files, deleting the oldest when over the limit.
- * Returns the backup file path on success, or false on failure / no data.
+ * Returns the backup file path on success, or false on failure / no data files.
  */
 const createBackup = async () => {
   try {
     const dataPath = await ensureDataDir();
-    const sourceFile = path.join(dataPath, 'bookTrackerData.json');
 
-    try {
-      await fs.access(sourceFile);
-    } catch {
+    // Discover all .json files in the data directory
+    const files = await fs.readdir(dataPath);
+    const dataFiles = files.filter(f => f.endsWith('.json'));
+
+    if (dataFiles.length === 0) {
       return false; // Nothing to back up yet
+    }
+
+    // Read each file and assemble a snapshot keyed by filename stem
+    const snapshot = { _backupCreatedAt: new Date().toISOString() };
+    for (const file of dataFiles) {
+      const key = file.replace(/\.json$/, '');
+      try {
+        const raw = await fs.readFile(path.join(dataPath, file), 'utf8');
+        snapshot[key] = JSON.parse(raw);
+      } catch {
+        // Skip files that can't be read or parsed (e.g. corrupt/empty)
+      }
     }
 
     const backupDir = await ensureBackupDir();
@@ -115,10 +132,10 @@ const createBackup = async () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFile = path.join(backupDir, `backup-${timestamp}.json`);
 
-    await fs.copyFile(sourceFile, backupFile);
+    await fs.writeFile(backupFile, JSON.stringify(snapshot, null, 2), 'utf8');
     await rotateBackups(backupDir);
 
-    console.log(`Backup created: ${backupFile}`);
+    console.log(`Backup created: ${backupFile} (keys: ${Object.keys(snapshot).filter(k => k !== '_backupCreatedAt').join(', ')})`);
     return backupFile;
   } catch (error) {
     console.error('Error creating backup:', error);
