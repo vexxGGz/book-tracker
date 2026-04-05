@@ -116,8 +116,11 @@ const CSVImportModal = ({ onClose, onImportComplete }) => {
             ...book,
             id: uuidv4(),
             dateAdded: book.dateAdded || now,
-            endDate: book.endDate || book.startDate || today,
-            startDate: book.startDate || book.endDate || today,
+            // Preserve dates exactly as provided in the CSV; do not default to today,
+            // as that would cause the book to be hidden by the year filter when viewing
+            // any year other than the current one.
+            endDate: book.endDate || book.startDate || null,
+            startDate: book.startDate || book.endDate || null,
           };
           delete newBook._originalIndex;
           booksToAdd.push(newBook);
@@ -135,8 +138,8 @@ const CSVImportModal = ({ onClose, onImportComplete }) => {
               ...book,
               id: uuidv4(),
               dateAdded: book.dateAdded || now,
-              endDate: book.endDate || book.startDate || today,
-              startDate: book.startDate || book.endDate || today,
+              endDate: book.endDate || book.startDate || null,
+              startDate: book.startDate || book.endDate || null,
             };
             delete newBook._originalIndex;
             booksToAdd.push(newBook);

@@ -56,9 +56,80 @@ const saveData = async (key, value) => {
   }
 };
 
+// ── Auto-backup ──────────────────────────────────────────────────────────────
+
+const MAX_BACKUPS = 3;
+
+const getBackupDir = () => path.join(app.getPath('userData'), 'backups');
+
+const ensureBackupDir = async () => {
+  const backupDir = getBackupDir();
+  try {
+    await fs.access(backupDir);
+  } catch {
+    await fs.mkdir(backupDir, { recursive: true });
+  }
+  return backupDir;
+};
+
+/**
+ * Rotate backup files, keeping only the most recent `maxCount` files.
+ */
+const rotateBackups = async (backupDir) => {
+  try {
+    const files = await fs.readdir(backupDir);
+    const backupFiles = files
+      .filter(f => f.startsWith('backup-') && f.endsWith('.json'))
+      .sort(); // ISO timestamps are lexicographically ordered oldest → newest
+
+    if (backupFiles.length > MAX_BACKUPS) {
+      const toDelete = backupFiles.slice(0, backupFiles.length - MAX_BACKUPS);
+      for (const file of toDelete) {
+        await fs.unlink(path.join(backupDir, file));
+      }
+    }
+  } catch (error) {
+    console.error('Error rotating backups:', error);
+  }
+};
+
+/**
+ * Create a timestamped backup of bookTrackerData.json.
+ * Keeps at most MAX_BACKUPS files, deleting the oldest when over the limit.
+ * Returns the backup file path on success, or false on failure / no data.
+ */
+const createBackup = async () => {
+  try {
+    const dataPath = await ensureDataDir();
+    const sourceFile = path.join(dataPath, 'bookTrackerData.json');
+
+    try {
+      await fs.access(sourceFile);
+    } catch {
+      return false; // Nothing to back up yet
+    }
+
+    const backupDir = await ensureBackupDir();
+
+    // Timestamp format: backup-2026-04-04T14-30-00-000Z.json
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(backupDir, `backup-${timestamp}.json`);
+
+    await fs.copyFile(sourceFile, backupFile);
+    await rotateBackups(backupDir);
+
+    console.log(`Backup created: ${backupFile}`);
+    return backupFile;
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    return false;
+  }
+};
+
 module.exports = {
   loadData,
-  saveData
+  saveData,
+  createBackup,
 };
 
 

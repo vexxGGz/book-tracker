@@ -1,9 +1,11 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
-const { loadData, saveData } = require('./storage.cjs');
+const { loadData, saveData, createBackup } = require('./storage.cjs');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
+let backupInterval = null;
+const BACKUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 // Configure auto-updater
 autoUpdater.autoDownload = true;
@@ -116,7 +118,12 @@ function createMenu() {
 // App lifecycle
 app.whenReady().then(() => {
   createWindow();
-  
+
+  // Start periodic auto-backup (every 5 minutes)
+  backupInterval = setInterval(() => {
+    createBackup().catch(err => console.error('Scheduled backup failed:', err));
+  }, BACKUP_INTERVAL_MS);
+
   // Check for updates after window is ready (only in production)
   if (app.isPackaged) {
     // Delay update check slightly to let the app fully load
@@ -126,6 +133,26 @@ app.whenReady().then(() => {
       });
     }, 3000);
   }
+});
+
+// On graceful shutdown, create a final backup before exiting
+let isQuitting = false;
+app.on('before-quit', (e) => {
+  if (isQuitting) return; // Already handled — let quit proceed
+
+  if (backupInterval) {
+    clearInterval(backupInterval);
+    backupInterval = null;
+  }
+
+  // Prevent immediate quit so we can finish the async backup
+  e.preventDefault();
+  createBackup()
+    .catch(err => console.error('Shutdown backup failed:', err))
+    .finally(() => {
+      isQuitting = true;
+      app.quit();
+    });
 });
 
 app.on('window-all-closed', () => {
@@ -227,5 +254,10 @@ ipcMain.handle('install-update', () => {
 
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
+});
+
+ipcMain.handle('trigger-backup', async () => {
+  const result = await createBackup();
+  return result ? { success: true, path: result } : { success: false };
 });
 

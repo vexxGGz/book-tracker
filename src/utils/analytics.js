@@ -60,7 +60,9 @@ export const filterBooksByYear = (books, year) => {
 
   return books.filter(book => {
     const dateRead = getBookDate(book);
-    if (!dateRead) return false;
+    // Books with no date (e.g. imported without date fields) are always shown
+    // rather than silently hidden from every year view.
+    if (!dateRead) return true;
     return dateRead >= yearStart && dateRead <= yearEnd;
   });
 };

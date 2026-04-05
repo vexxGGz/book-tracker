@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('update-ready');
   },
 
+  // Backup
+  triggerBackup: () => ipcRenderer.invoke('trigger-backup'),
+
   // Check if running in Electron
   isElectron: true
 });
