@@ -7,6 +7,12 @@ let mainWindow;
 let backupInterval = null;
 const BACKUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Disable GPU hardware acceleration before app is ready.
+// Required on machines with VR software (e.g. Meta Quest Link) or certain
+// GPU driver combinations where Chromium's GPU compositor silently fails,
+// causing the transparent frameless window to render as a blank white screen.
+app.disableHardwareAcceleration();
+
 // Configure auto-updater
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
