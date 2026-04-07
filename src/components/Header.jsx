@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, Plus, BarChart3, Library, Settings } from 'lucide-react';
 
-const Header = ({ currentView, onViewChange, onAddBook, onOpenSettings }) => {
+const Header = ({ currentView, onViewChange, onAddBook, onOpenSettings, syncStatus }) => {
   return (
     <header 
       style={{
@@ -104,6 +104,9 @@ const Header = ({ currentView, onViewChange, onAddBook, onOpenSettings }) => {
 
           {/* Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Sync Status */}
+            {syncStatus}
+
             <button
               onClick={onOpenSettings}
               style={{
