@@ -504,7 +504,7 @@ const BookCard = ({ book, onDelete, onEdit }) => {
           )}
 
           {/* ISBNdb link */}
-          {book.isbn && (
+          {book.isbn13 && (
             <div style={{ paddingTop: '4px' }}>
               <button
                 onClick={(e) => {
