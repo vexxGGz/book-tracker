@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, Loader2, BookOpen, ChevronDown, ChevronUp, Book, AlertTriangle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
-import { addBook, checkDuplicate } from '../utils/storage';
+import { addBook, checkDuplicate, loadIsbndbApiKey } from '../utils/storage';
 import { searchBookByISBN, searchBooks } from '../utils/bookApi';
 
 const MEDIUMS = [
@@ -105,6 +105,11 @@ const AddBookModal = ({ onClose, onBookAdded }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [isbndbKey, setIsbndbKey] = useState('');
+
+  useEffect(() => {
+    loadIsbndbApiKey().then(setIsbndbKey);
+  }, []);
   
   const [showPublishingSection, setShowPublishingSection] = useState(false);
   const [duplicateBook, setDuplicateBook] = useState(null);
@@ -131,7 +136,7 @@ const AddBookModal = ({ onClose, onBookAdded }) => {
     setSearchResults([]);
 
     try {
-      const results = await searchBooks(searchQuery);
+      const results = await searchBooks(searchQuery, isbndbKey || undefined);
       setSearchResults(results);
       setShowResults(true);
       
@@ -175,7 +180,7 @@ const AddBookModal = ({ onClose, onBookAdded }) => {
     setSearchError('');
 
     try {
-      const bookData = await searchBookByISBN(formData.isbn);
+      const bookData = await searchBookByISBN(formData.isbn, isbndbKey || undefined);
 
       if (bookData) {
         setFormData(prev => ({

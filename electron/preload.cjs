@@ -36,6 +36,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Backup
   triggerBackup: () => ipcRenderer.invoke('trigger-backup'),
+  getBackups: () => ipcRenderer.invoke('get-backups'),
+  restoreBackup: (filePath) => ipcRenderer.invoke('restore-backup', filePath),
+
+  // File I/O
+  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
+  writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
+
+  // Open URLs / files in system default app
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   // Check if running in Electron
   isElectron: true

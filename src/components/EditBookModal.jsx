@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Loader2, BookOpen, ChevronDown, ChevronUp, Save } from 'lucide-react';
-import { updateBook } from '../utils/storage';
+import { updateBook, loadIsbndbApiKey } from '../utils/storage';
 import { searchBookByISBN } from '../utils/bookApi';
 
 const MEDIUMS = [
@@ -100,6 +100,9 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [showPublishingSection, setShowPublishingSection] = useState(false);
+  const [isbndbKey, setIsbndbKey] = useState('');
+
+  useEffect(() => { loadIsbndbApiKey().then(setIsbndbKey); }, []);
 
   // Load book data into form
   useEffect(() => {
@@ -172,7 +175,7 @@ const EditBookModal = ({ book, onClose, onBookUpdated }) => {
     setSearchError('');
 
     try {
-      const bookData = await searchBookByISBN(formData.isbn);
+      const bookData = await searchBookByISBN(formData.isbn, isbndbKey || undefined);
 
       if (bookData) {
         setFormData(prev => ({

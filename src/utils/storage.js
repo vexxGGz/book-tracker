@@ -3,6 +3,7 @@
 
 const STORAGE_KEY = 'bookTrackerData';
 const API_KEY_STORAGE = 'googleBooksApiKey';
+const ISBNDB_KEY_STORAGE = 'isbndbApiKey';
 const READING_GOALS_KEY = 'readingGoals';
 
 // Check if running in Electron
@@ -106,6 +107,35 @@ export const clearApiKey = async () => {
   } catch (error) {
     console.error('Error clearing API key:', error);
     return false;
+  }
+};
+
+// ISBNdb API key management
+export const saveIsbndbApiKey = async (apiKey) => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI.saveData(ISBNDB_KEY_STORAGE, apiKey);
+    } else {
+      localStorage.setItem(ISBNDB_KEY_STORAGE, apiKey);
+      return true;
+    }
+  } catch (error) {
+    console.error('Error saving ISBNdb API key:', error);
+    return false;
+  }
+};
+
+export const loadIsbndbApiKey = async () => {
+  try {
+    if (isElectron()) {
+      const data = await window.electronAPI.loadData(ISBNDB_KEY_STORAGE);
+      return data || '';
+    } else {
+      return localStorage.getItem(ISBNDB_KEY_STORAGE) || '';
+    }
+  } catch (error) {
+    console.error('Error loading ISBNdb API key:', error);
+    return '';
   }
 };
 

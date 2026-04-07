@@ -1,36 +1,40 @@
-// Google Books API integration
+// Book lookup — tries ISBNdb first (if key provided), falls back to Google Books
+
+import { searchByISBN as isbndbSearchByISBN, searchByTitle as isbndbSearchByTitle } from './isbndbApi';
 
 const GOOGLE_BOOKS_API_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const API_KEY = 'AIzaSyCK6Vq3gc_i5KtFazbhvFdoUGtxD6kHlWA';
 
 /**
- * Search for a book by ISBN using Google Books API
- * @param {string} isbn - The ISBN of the book
- * @returns {Promise<Object|null>} Book data or null if not found
+ * Search for a book by ISBN — tries ISBNdb first (if key provided), falls back to Google Books
+ * @param {string} isbn
+ * @param {string} [isbndbKey] - ISBNdb API key (optional)
+ * @returns {Promise<Object|null>}
  */
-export const searchBookByISBN = async (isbn) => {
+export const searchBookByISBN = async (isbn, isbndbKey) => {
   if (!isbn) {
     throw new Error('ISBN is required');
   }
 
+  // Try ISBNdb first
+  if (isbndbKey) {
+    try {
+      const result = await isbndbSearchByISBN(isbn, isbndbKey);
+      if (result) return result;
+    } catch (_) {
+      // fall through to Google Books
+    }
+  }
+
+  // Fall back to Google Books
   try {
-    const cleanIsbn = isbn.replace(/[^0-9X]/gi, ''); // Remove hyphens and spaces
+    const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
     const url = `${GOOGLE_BOOKS_API_BASE}?q=isbn:${cleanIsbn}&key=${API_KEY}`;
-
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.statusText}`);
-    }
-
+    if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
     const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      return null;
-    }
-
-    const book = data.items[0];
-    return parseBookData(book);
+    if (!data.items || data.items.length === 0) return null;
+    return parseBookData(data.items[0]);
   } catch (error) {
     console.error('Error fetching book from Google Books API:', error);
     throw error;
@@ -38,30 +42,33 @@ export const searchBookByISBN = async (isbn) => {
 };
 
 /**
- * Search for books by title and/or author
- * @param {string} query - Search query
- * @returns {Promise<Array>} Array of book results
+ * Search for books by title and/or author — tries ISBNdb first, falls back to Google Books
+ * @param {string} query
+ * @param {string} [isbndbKey] - ISBNdb API key (optional)
+ * @returns {Promise<Array>}
  */
-export const searchBooks = async (query) => {
+export const searchBooks = async (query, isbndbKey) => {
   if (!query) {
     throw new Error('Query is required');
   }
 
+  // Try ISBNdb first
+  if (isbndbKey) {
+    try {
+      const results = await isbndbSearchByTitle(query, isbndbKey);
+      if (results && results.length > 0) return results;
+    } catch (_) {
+      // fall through
+    }
+  }
+
+  // Fall back to Google Books
   try {
     const url = `${GOOGLE_BOOKS_API_BASE}?q=${encodeURIComponent(query)}&maxResults=10&key=${API_KEY}`;
-
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.statusText}`);
-    }
-
+    if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
     const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      return [];
-    }
-
+    if (!data.items || data.items.length === 0) return [];
     return data.items.map(parseBookData);
   } catch (error) {
     console.error('Error searching books:', error);

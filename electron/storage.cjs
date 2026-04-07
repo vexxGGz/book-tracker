@@ -143,10 +143,88 @@ const createBackup = async () => {
   }
 };
 
+/**
+ * List the most recent auto-backup files (newest first, max MAX_BACKUPS).
+ */
+const getBackups = async () => {
+  try {
+    const backupDir = getBackupDir();
+    let files;
+    try {
+      files = await fs.readdir(backupDir);
+    } catch {
+      return []; // backup dir doesn't exist yet
+    }
+
+    const backupFiles = files
+      .filter(f => f.startsWith('backup-') && f.endsWith('.json'))
+      .sort()
+      .reverse()
+      .slice(0, MAX_BACKUPS);
+
+    const backups = [];
+    for (const file of backupFiles) {
+      const filePath = path.join(backupDir, file);
+      try {
+        const stats = await fs.stat(filePath);
+        backups.push({
+          path: filePath,
+          filename: file,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString(),
+        });
+      } catch {
+        // skip unreadable files
+      }
+    }
+    return backups;
+  } catch (error) {
+    console.error('Error listing backups:', error);
+    return [];
+  }
+};
+
+/**
+ * Restore app data from a backup or exported library file.
+ * Accepts both the snapshot format (from createBackup) and a plain books array.
+ */
+const restoreFromBackup = async (filePath) => {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    const data = JSON.parse(raw);
+    const dataPath = await ensureDataDir();
+
+    if (Array.isArray(data)) {
+      // Plain books export — restore only the books key
+      await fs.writeFile(
+        path.join(dataPath, 'bookTrackerData.json'),
+        JSON.stringify(data, null, 2),
+        'utf8'
+      );
+    } else {
+      // Full snapshot — restore all keys
+      for (const [key, value] of Object.entries(data)) {
+        if (key === '_backupCreatedAt') continue;
+        await fs.writeFile(
+          path.join(dataPath, `${key}.json`),
+          JSON.stringify(value, null, 2),
+          'utf8'
+        );
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error('Error restoring backup:', error);
+    return false;
+  }
+};
+
 module.exports = {
   loadData,
   saveData,
   createBackup,
+  getBackups,
+  restoreFromBackup,
 };
 
 

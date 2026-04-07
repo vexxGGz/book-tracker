@@ -41,6 +41,29 @@
 
   /* Text shadow for depth */
   --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
+
+  /* Main app gradient */
+  --gradient-bg: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+}
+
+/* ── Light theme ────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8edf4;
+  --bg-widget: rgba(255, 255, 255, 0.92);
+  --bg-widget-solid: #ffffff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(99, 102, 241, 0.5);
+
+  --text-shadow: none;
+
+  --gradient-bg: linear-gradient(135deg, #e8edf4 0%, #f8fafc 50%, #e8edf4 100%);
 }
 
 /* Reset & Base */

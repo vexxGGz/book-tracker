@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, dialog } = require('electron');
+const fs = require('fs').promises;
 const path = require('path');
-const { loadData, saveData, createBackup } = require('./storage.cjs');
+const { loadData, saveData, createBackup, getBackups, restoreFromBackup } = require('./storage.cjs');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
@@ -265,5 +266,41 @@ ipcMain.handle('get-app-version', () => {
 ipcMain.handle('trigger-backup', async () => {
   const result = await createBackup();
   return result ? { success: true, path: result } : { success: false };
+});
+
+// Open external URL in system browser
+ipcMain.handle('open-external', async (_event, url) => {
+  await shell.openExternal(url);
+});
+
+// Native save dialog
+ipcMain.handle('show-save-dialog', async (_event, options) => {
+  return await dialog.showSaveDialog(mainWindow, options);
+});
+
+// Native open dialog
+ipcMain.handle('show-open-dialog', async (_event, options) => {
+  return await dialog.showOpenDialog(mainWindow, options);
+});
+
+// Write data to a file path (for Export Library)
+ipcMain.handle('write-file', async (_event, filePath, content) => {
+  try {
+    await fs.writeFile(filePath, content, 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error writing file:', error);
+    return false;
+  }
+});
+
+// List recent auto-backups
+ipcMain.handle('get-backups', async () => {
+  return await getBackups();
+});
+
+// Restore from a backup or exported library file
+ipcMain.handle('restore-backup', async (_event, filePath) => {
+  return await restoreFromBackup(filePath);
 });
 

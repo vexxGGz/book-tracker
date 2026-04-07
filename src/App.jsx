@@ -181,7 +181,7 @@ function AppContent() {
         className="app-bg min-h-screen animate-fade-in"
         style={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)',
+          background: 'var(--gradient-bg)',
           opacity: splashVisible ? 0 : 1,
           transition: 'opacity 0.4s ease',
         }}

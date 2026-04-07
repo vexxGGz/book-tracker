@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  Star, Trash2, BookOpen, DollarSign, Headphones, Smartphone, Book, 
-  Calendar, Edit2, Instagram, XCircle, CheckCircle2, Clock, PiggyBank, Ban
+import {
+  Star, Trash2, BookOpen, DollarSign, Headphones, Smartphone, Book,
+  Calendar, Edit2, Instagram, XCircle, CheckCircle2, Clock, PiggyBank, Ban, ExternalLink
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -500,6 +500,46 @@ const BookCard = ({ book, onDelete, onEdit }) => {
               }}
             >
               {book.dnfReason}
+            </div>
+          )}
+
+          {/* ISBNdb link */}
+          {book.isbn && (
+            <div style={{ paddingTop: '4px' }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const isbn = book.isbn13 || book.isbn;
+                  if (window.electronAPI?.openExternal) {
+                    window.electronAPI.openExternal(`https://isbndb.com/book/${isbn}`);
+                  } else {
+                    window.open(`https://isbndb.com/book/${isbn}`, '_blank', 'noopener');
+                  }
+                }}
+                title="View on ISBNdb"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 8px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                  background: 'transparent',
+                  color: '#6366f1',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <ExternalLink style={{ width: '12px', height: '12px' }} />
+                <span>ISBNdb</span>
+              </button>
             </div>
           )}
 
